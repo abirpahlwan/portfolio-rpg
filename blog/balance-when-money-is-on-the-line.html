@@ -3,161 +3,80 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>When there's money on the result, balance stops being a feeling — Iqbal Hossain</title>
-<meta name="description" content="Tuning a skill game is a feel decision right up until real money rides on the outcome. Then it becomes a statistical one.">
+<title>Ludo Club at 5M+ daily players — Pahlwan Rabiul Islam</title>
+<meta name="description" content="Micro-services, real-time sync and live operations on a multiplayer dice game with 5M+ daily active users.">
 <meta property="og:type" content="article">
-<meta property="og:title" content="When there's money on the result, balance stops being a feeling">
-<meta property="og:description" content="Tuning a skill game is a feel decision right up until real money rides on the outcome. Then it becomes a statistical one.">
+<meta property="og:title" content="Ludo Club at 5M+ daily players">
+<meta property="og:description" content="Micro-services, real-time sync and live operations on a multiplayer dice game with 5M+ daily active users.">
 <link rel="stylesheet" href="blog.css">
 </head>
 <body>
 
 <nav class="topbar">
   <a href="../">← The village</a>
-  <a href="./">All writing</a>
-  <span class="who">Iqbal Hossain</span>
+  <a href="./">All notes</a>
+  <span class="who">Pahlwan Rabiul Islam</span>
 </nav>
 
 <div class="wrap">
 <article>
 
-<h1>When there's money on the result, balance stops being a feeling</h1>
-<p class="meta">Brick Blaster Cash · <b>competitive mobile</b> · ~6 min read</p>
+<h1>Ludo Club at 5M+ daily players: what scale teaches you</h1>
+<p class="meta">Ludo Club · <b>multiplayer</b> · ~5 min read</p>
 
 <p class="standfirst">
-Every game developer tunes by feel. You play it, something is off, you nudge a number, you play it again.
-That loop works for most of the games I've built. It stopped working the first time a match had real money
-on the outcome.
+Ludo takes about four seconds to explain. Running it live for millions of daily players
+is a different game entirely — and it taught me how production multiplayer really works.
 </p>
 
 <p>
-<strong>Brick Blaster Cash</strong> is a brick breaker. You've played one; the rules take about four seconds
-to explain. The difference is that two players enter the same match, pay to be there, and one of them walks
-away with a prize. That single change reaches back through every design decision in the game, and the first
-place it lands is balance.
+<strong>Ludo Club</strong> is the online multiplayer version of the hit dice game. I worked on it
+at Ulka Games Ltd / Moonfrog Labs (Jun 2020 — Jul 2022): Node.js micro-services on the backend,
+Unity3D and Cocos frontends, real-time multiplayer synchronisation, and live operations.
 </p>
 
-<h2>The thing a cash match has to guarantee</h2>
+<h2>Micro-services, because one server can't hold millions of rooms</h2>
 
 <p>
-In a normal free-to-play game, "is this fair?" is a question about player sentiment. If the difficulty curve
-is a little generous on level 12, nobody is harmed. The worst case is that someone gets bored.
+Rooms, matches and player state are spread across services rather than living in one process.
+That keeps a spike in one region from taking down everyone, and lets each piece — matchmaking,
+match state, accounts — scale and deploy on its own rhythm.
 </p>
 
+<h2>Sync is the product</h2>
+
 <p>
-In a skill-based cash match, fairness is the product. What you are actually promising is this: <em>the better
-player wins more often than the worse player, and the gap between two players' scores reflects the gap in
-their skill rather than the gap in their luck.</em> If that promise breaks, you no longer have a skill game.
-You have something else, and "something else" is both a design failure and a regulatory one.
+In a live dice match, the client and the server will disagree: a dropped connection, a late
+packet, a player who leaves mid-match and comes back. The server has to stay authoritative
+about turns and state, and reconciliation has to be invisible to the players still at the table.
+None of that shows up in a screenshot, and all of it decides whether the game is playable.
 </p>
 
-<p>
-So the question changes shape. It is no longer "does this feel good to play?" — though it still has to. It
-becomes "what does the distribution of scores look like across thousands of matches, and what does a change
-to this number do to that distribution?"
-</p>
-
-<h2>Every tuning change moves the whole curve</h2>
+<h2>Production debugging is a different discipline</h2>
 
 <p>
-This is the part that surprised me most. In a single-player game a tuning change is local: you make the
-paddle faster, the game gets easier, you move on. In a competitive game, the paddle speed is an input to a
-score distribution, and the score distribution is what decides whether a match feels fair.
+The bug is in someone else's match, on a device you don't have, on a connection you can't
+reproduce — and the game keeps running while you look for it. You learn to reason from logs
+and state rather than from a breakpoint, and to ship retention fixes into a codebase where
+anything you break is broken for everyone at once.
 </p>
 
 <p>
-Make a mechanic slightly more generous and you don't simply shift every score upward. You change the
-<em>shape</em>. A more forgiving mechanic compresses the distribution — good players and mediocre players end
-up closer together, which means more matches are decided by the last few seconds, which means more matches
-are effectively decided by luck. That is the opposite of what a skill game needs, and you'd never notice it
-by playing the build yourself a dozen times.
-</p>
-
-<blockquote>
-Tuning stops being a feel decision and becomes a statistical one.
-</blockquote>
-
-<p>
-Conversely, a harsher mechanic spreads the distribution out. Now skill dominates, which sounds ideal, until
-you notice that a new player has no path to ever winning, quits in week one, and takes the size of your
-matchmaking pool with them. A competitive game needs new players to lose in a way that feels close.
-</p>
-
-<p>
-The balance point between those two failures is not a matter of taste. It is a number you find by looking at
-what real players actually score.
-</p>
-
-<h2>What this changes about how you work</h2>
-
-<p>
-Three practical consequences, all of which took me a while to internalise:
-</p>
-
-<h3>You cannot tune from your own play sessions</h3>
-<p>
-You are the worst possible test subject. You know the mechanic intimately, you have played the build a
-thousand times, and your scores sit in a tail of the distribution that almost no real player occupies. Your
-feel is real information about whether the game is <em>pleasant</em>, and almost no information about whether
-it is <em>fair</em>.
-</p>
-
-<h3>A tuning change is a release-shaped risk</h3>
-<p>
-If a number that decides payouts is baked into the client, then changing it means a store submission, a
-review queue, and a population split across two versions with two different difficulty curves — which, in a
-game where people compete against each other, is unacceptable. This is the reason those values live on the
-server and not in the build, and it is a large enough topic that I've written about it
-<a href="server-authoritative-config.html">separately</a>.
-</p>
-
-<h3>"It feels better" is the beginning of the argument, not the end</h3>
-<p>
-The instinct is still worth a great deal — it is usually what tells you where to look. But on a competitive
-title the instinct produces a hypothesis, and the hypothesis has to survive contact with the distribution
-before it ships.
-</p>
-
-<h2>The part nobody warns you about</h2>
-
-<p>
-There's a second balance problem sitting behind the first one, and it isn't about the game at all. A prize
-structure has to be sustainable. The distribution of scores determines how often players at each skill level
-win, which determines what the prize pool has to pay out, which determines whether the whole thing works as a
-business. Change the mechanic and you have moved a number on a spreadsheet in the finance conversation.
-</p>
-
-<p>
-I don't think I appreciated, before working on these games, how tightly the feel of a mechanic is coupled to
-the economics of the product. In a premium game they're separated by a purchase. In a free-to-play game
-they're separated by a monetisation layer. In a skill-based cash game they are the same decision.
-</p>
-
-<h2>What I'd tell myself in 2023</h2>
-
-<p>
-Keep tuning by feel — it's still how you find the interesting candidates. But treat the feel as the start of
-an investigation rather than the conclusion of one, get the values off the client early so that investigating
-is cheap, and look at what players actually score rather than what you score.
-</p>
-
-<p>
-The mechanic is the fun part. The distribution is the product.
+Simple rules, hard infrastructure. That combination is why this project stays on my portfolio.
 </p>
 
 </article>
 
 <div class="endnote">
   <p>
-    Brick Blaster Cash is live on the
-    <a href="https://apps.apple.com/us/app/brick-blaster-cash-win-money/id6466097629" target="_blank" rel="noopener">App&nbsp;Store</a>
-    and on <a href="https://games.skillz.com/mobile/games/22815" target="_blank" rel="noopener">Skillz</a>.
-    I'm Technical Director at FlyCow Games — more of what I've built is
+    Ludo Club is live at
+    <a href="https://ludoclub.com" target="_blank" rel="noopener">ludoclub.com</a>.
+    I'm a Software Engineer at Metamorphosis Ltd — more of what I've built is
     <a href="../">in the village</a>.
   </p>
   <div class="nextprev">
-    <a href="server-authoritative-config.html">Next: never let the client decide the rules →</a>
-    <a href="./">All writing</a>
+    <a href="server-authoritative-config.html">Next: enterprise HR on Odoo →</a>
+    <a href="./">All notes</a>
   </div>
 </div>
 
